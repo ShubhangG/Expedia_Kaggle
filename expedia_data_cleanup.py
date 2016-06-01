@@ -30,9 +30,23 @@ def seperate_into_classes(dataframe):
 	for hotel in dataframe['hotel_cluster']:
 		#print type(hotel)
 		seperated[hotel]= seperation_table.get_group(hotel)
+		seperated[hotel].drop('hotel_cluster', axis=1, inplace=True)
 
 	return seperated
 
-print seperate_into_classes(read_in('chota_train'))
+def calculate_summary(seperated_data):
+	mean_data = {}
+	std_data = {}
+	for hotel, vector in seperated_data.iteritems():
+		mean_data[hotel] = vector.mean(axis=0)
+		std_data[hotel] = vector.std(axis=0)
+	return mean_data, std_data
+
+
+
+seperated = {}
+seperated = seperate_into_classes(read_in('chota_train'))
+mean_data, std_data = calculate_summary(seperated)
+print mean_data[1][2]
 
 #usecols=['user_location_country','srch_destination_id','is_booking','hotel_cluster']
