@@ -3,7 +3,8 @@ import pandas as pd
 import math
 from sklearn import preprocessing
 
-def read_in(train_filename,test_filename):
+#This funciton reads data and normalizes it according to min_max normalization.
+def read_in(train_filename,test_filename):																
 	train_data = pd.read_csv(train_filename, usecols=['hotel_market' ,'is_booking','hotel_cluster'])
 	test_data = pd.read_csv(test_filename, usecols=['hotel_market', 'is_booking'])
 	normalizer = {}
@@ -34,6 +35,7 @@ def read_in(train_filename,test_filename):
 	
 	return numeric_data, numeric_test
 
+#Training Data after being read and normalized is grouped according to different hotel clusters- for ex all rows which have 1 as the hotel cluster are grouped together
 def seperate_into_classes(dataframe):
 	seperated = {}
 	seperation_table = dataframe.groupby('hotel_cluster')
@@ -44,6 +46,7 @@ def seperate_into_classes(dataframe):
 
 	return seperated
 
+#This finds the average and standard deviation for each and every attribute- here it is just two- hotel_market and is_booking
 def calculate_summary(seperated_data):
 	mean_data = {}
 	std_data = {}
@@ -53,6 +56,7 @@ def calculate_summary(seperated_data):
 
 	return mean_data, std_data
 
+#Formula for calculating pdf
 def guassian_pdf(x, mean, std):										#pdf formula from wiki	
 	if std == 0:
 		std = 1.0/100001.0
@@ -60,7 +64,7 @@ def guassian_pdf(x, mean, std):										#pdf formula from wiki
 	return (1.0 / (math.sqrt(2.0*math.pi) * std)) * exponent
 
 def probabilities(input_vector, mean, std):									#Assuming attributes are independent of each other
-	probability = {}														#so the probabilities multiply, so the probability of a class is													
+	probability = {}														#so the probabilities multiply, so the probability of a input belonging to a particular hotel_cluster is													
 	for attribute in range(0,len(input_vector)):							#product of probabilities of its attributes
 		probability[attribute] = guassian_pdf(input_vector[attribute], mean[attribute], std[attribute])
 		if probability[attribute] == 0:
@@ -72,47 +76,56 @@ def probabilities(input_vector, mean, std):									#Assuming attributes are ind
 
 	return math.fabs(class_probability)
 
-def Predict(input_vector, mean_data, std_data): 							#Parameters- pd.series, dictionary of , dic#gives us the predicted country 
+#Make predictions from test_data
+def Predict(input_vector, mean_data, std_data): 							 
  	class_pdf = {}															
 	for hotel, means in mean_data.iteritems():
 		class_pdf[hotel] = probabilities(input_vector, means, std_data[hotel])
 
 	highest = max(class_pdf.values())
 
-	return [key for key,val in class_pdf.items() if val==highest]	
+	return [key for key,val in class_pdf.items() if val>12]	
 	#return max(class_pdf, key=lambda i: class_pdf[i])
 
 
-
+#Basic main function
 training_data, test_data = read_in('chota_train', 'chota_test')
 seperated = {}
 seperated = seperate_into_classes(training_data)
 mean_data, std_data = calculate_summary(seperated)
+
+target = open('submission.csv', 'w')
+target.write('id')
+target.write(',')
+target.write('hotel_cluster')
+target.write('\n')
+
+
+for i in range(0,test_data.count()[0]):
+	writer = Predict(test_data.iloc[i], mean_data, std_data)
+	target.write(str(i))
+	target.write(',')
+ 	for number in writer:
+ 		target.write(str(number))
+ 		target.write(' ')
+
+ 	target.write('\n')
+
+target.close()
+
+#############################################################################################################################################################
+#Ideas that did not get through
+
+#usecols=['','hotel_market','is_booking','hotel_cluster']
 #print mean_data[2][1]  	#works!
 
-labels = []
-for i in range(0,test_data.count()[0]):
-	labels.append(Predict(test_data.iloc[i], mean_data, std_data))
-
-
-submission = pd.DataFrame(labels)
-
-submission.to_csv('submission.csv')
-#np.savetxt('submission.csv', labels, header = 'hotel_cluster')
-# target = open('submission.csv', 'w')
-# target.write('id')
-# target.write(',')
-# target.write('hotel_cluster')
-# target.write('\n')
-
-
-# #labels = []
+# labels = []
 # for i in range(0,test_data.count()[0]):
-# 	target.write(str(i))
-# 	target.write(',')
-#  	#labels.append(Predict(test_data.iloc[i], mean_data, std_data))
-#  	target.write(str(Predict(test_data.iloc[i], mean_data, std_data)))
-#  	target.write('\n')
+# 	labels.append(Predict(test_data.iloc[i], mean_data, std_data))
 
-# target.close()
-#usecols=['','hotel_market','is_booking','hotel_cluster']
+# submission = pd.DataFrame(labels)
+# #labels = []
+# submission.to_csv('submission.csv')
+
+#np.savetxt('submission.csv', labels, header = 'hotel_cluster')
+#labels.append(Predict(test_data.iloc[i], mean_data, std_data))
