@@ -5,17 +5,17 @@ from sklearn import preprocessing
 
 #This funciton reads data and normalizes it according to min_max normalization.
 def read_in(train_filename,test_filename):																
-	train_data = pd.read_csv(train_filename, usecols=['hotel_market' ,'is_booking','hotel_cluster'])
-	test_data = pd.read_csv(test_filename, usecols=['hotel_market', 'is_booking'])
+	train_data = pd.read_csv(train_filename, usecols=['hotel_market' ,'srch_destination_id','hotel_cluster'])
+	test_data = pd.read_csv(test_filename, usecols=['hotel_market', 'srch_destination_id'])
 	normalizer = {}
 	test_normzer = {}
 	#need to make the following more efficient, especially w.r.t time cost
 	train_data['hotel_market'] = train_data['hotel_market'].values.astype(float)
-	train_data['is_booking'] = train_data['is_booking'].values.astype(float)
+	train_data['srch_destination_id'] = train_data['srch_destination_id'].values.astype(float)
 	
 	
 	test_data['hotel_market'] = test_data['hotel_market'].values.astype(float)
-	test_data['is_booking'] = test_data['is_booking'].values.astype(float)
+	test_data['srch_destination_id'] = test_data['srch_destination_id'].values.astype(float)
 
 	#test_data['hotel_market'].fillna(inplace = True)
 
@@ -24,11 +24,11 @@ def read_in(train_filename,test_filename):
 	#need to make this loopy!
 	
 	normalizer['hotel_market'] = min_max_scalar.fit_transform(train_data['hotel_market'])
-	normalizer['is_booking'] = min_max_scalar.fit_transform(train_data['is_booking'])
+	normalizer['srch_destination_id'] = min_max_scalar.fit_transform(train_data['srch_destination_id'])
 	normalizer['hotel_cluster'] = train_data['hotel_cluster'].copy()
 	
 	test_normzer['hotel_market'] = min_max_scalar.fit_transform(test_data['hotel_market'])
-	test_normzer['is_booking'] = min_max_scalar.fit_transform(test_data['is_booking'])
+	test_normzer['srch_destination_id'] = min_max_scalar.fit_transform(test_data['srch_destination_id'])
 
 	numeric_data = pd.DataFrame.from_dict(normalizer)
 	numeric_test = pd.DataFrame.from_dict(test_normzer)
@@ -46,7 +46,7 @@ def seperate_into_classes(dataframe):
 
 	return seperated
 
-#This finds the average and standard deviation for each and every attribute- here it is just two- hotel_market and is_booking
+#This finds the average and standard deviation for each and every attribute- here it is just two- hotel_market and srch_destination_id
 def calculate_summary(seperated_data):
 	mean_data = {}
 	std_data = {}
@@ -74,7 +74,7 @@ def probabilities(input_vector, mean, std):									#Assuming attributes are ind
 	for attribute, pdf in probability.iteritems():
 		class_probability = class_probability + math.log(pdf)
 
-	return math.fabs(class_probability)
+	return math.exp(class_probability)
 
 #Make predictions from test_data
 def Predict(input_vector, mean_data, std_data): 							 
@@ -83,8 +83,8 @@ def Predict(input_vector, mean_data, std_data):
 		class_pdf[hotel] = probabilities(input_vector, means, std_data[hotel])
 
 	highest = max(class_pdf.values())
-
-	return [key for key,val in class_pdf.items() if val>12]	
+	#print class_pdf
+	return [key for key,val in class_pdf.items() if val>9*math.pow(10,-6)]	
 	#return max(class_pdf, key=lambda i: class_pdf[i])
 
 
@@ -116,7 +116,7 @@ target.close()
 #############################################################################################################################################################
 #Ideas that did not get through
 
-#usecols=['','hotel_market','is_booking','hotel_cluster']
+#usecols=['','hotel_market','srch_destination_id','hotel_cluster']
 #print mean_data[2][1]  	#works!
 
 # labels = []
